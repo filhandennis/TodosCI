@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+html(lang="en")
+    head
+        meta(charset="UTF-8")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        meta(http-equiv="X-UA-Compatible", content="ie=edge")
+        title
+            block title
+        link(href="<?=asset_url();?>lib/semanticui/semantic.min.css", rel="stylesheet")
+        script(src="<?=asset_url();?>lib/jquery.min.js")
+        script(src="<?=asset_url();?>lib/semanticui/semantic.min.js")
+        script(src="<?=asset_url();?>lib/angular/angular.min.js")
+        
+        block style
+        
+    body
+        div.ui.container
+            block content
+
+        footer
+    
+    script(src="<?=asset_url();?>lib/sweetalert.min.js")
+    block script

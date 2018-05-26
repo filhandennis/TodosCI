@@ -1,0 +1,51 @@
+//- extends ./layout.pug
+
+//- block title
+//-     = title
+
+//- block content
+//- - isset($edit)?var_dump($edit['data']):'';
+.ui.container
+    .ui.form
+        .field
+            label Nama Task
+            input(type='text', name='taskName', ng-model='task.taskName', value= (isset($edit)?$edit['data']->name:''))
+            //- p {{task.taskTimeset}}
+            
+        .field
+            label Waktu
+            #taskTimeset.ui.calendar
+                .ui.input.left.icon
+                    i.calendar.icon
+                    input(type='date', name='taskTimeset', ng-model='task.taskTimeset', value= (isset($edit)?$edit['data']->timeset:''))                    
+            //- input(type='text', name='taskTimeset', ng-model='task.taskTimeset', value= (isset($edit)?$edit['data']->timeset:''))
+            //- p {{task.taskTimeset}}
+        .field
+            .grouped.fields
+                label Priority
+                <?php $priors = ['1','2','3','4']; ?>
+                - each item, i in $priors
+                    .field
+                        .ui.radio.checkbox
+                            - if($i==0 || (isset($edit) && $edit['data']->priority==$item))
+                                input(type='radio', id='priority-'+item, value= item, name='taskPriority', ng-model='task.taskPriority', checked)
+                            - else
+                                input(type='radio', id='priority-'+item, value= item, name='taskPriority', ng-model='task.taskPriority')
+                            label(for='priority-'+item)= item
+
+        .field
+            .inline.fields
+                label Status
+                <?php $status = ['Pending','Completed','Failed','Removed']; ?>
+                - each item, i in $status
+                    .field
+                        .ui.radio.checkbox
+                            - if($i==0 || (isset($edit) && $edit['data']->status==$item))
+                                input(type='radio', id='status-'+item, value= item, name='taskStatus', ng-model='task.taskStatus', checked)
+                            - else 
+                                input(type='radio', id='status-'+item, value= item, name='taskStatus', ng-model='task.taskStatus')
+                            label(for='status-'+item)= item
+        input(type='hidden', name='taskColor', ng-model='task.taskColor', value= (isset($edit)?$edit['data']->name:'default'))
+        //- button.ui.button.blue(type='submit') Create Task
+
+//- block script

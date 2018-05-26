@@ -1,0 +1,192 @@
+extends ./layout.pug
+
+block style
+    link(href="<?=asset_url();?>lib/semanticui/components/list.min.css", rel="stylesheet")
+    link(href="<?=asset_url();?>lib/semantic-calendar/calendar.min.css", rel="stylesheet")
+    
+
+block title
+    | My Todos
+
+block content
+    .ui.grid
+        .ui.two.column.row(style='margin-top:5%;')
+            .column
+                //- | Col 1
+            .column(ng-app='app', ng-controller='taskController', ng-init='getAllData()')
+                .ui.grid.equal.width
+                    //- .ui.clearing.segment
+                    .ten.wide.column
+                        h2.header
+                            | &nbsp;
+                            | My Todos
+                    .column.right.aligned
+                        button.ui.button.primary(t='/Task/add', id='addTask', ng-click='create($event)') 
+                            i.plus.circle.icon
+                            | Add Task
+                .ui.piled.segment
+                    .column
+                        #todoPreloader.ui.centered.inline.text.loader
+                        #todoList.ui.divided.list(style='display:none;')
+                            //- - for($i=0; $i<10; $i++)
+                            //- Item
+                            .item(ng-if='alldata.length<1', style='text-align:center; padding:16px;') 
+                                | Data is empty. &nbsp;
+                                a(href='javascript:;', ng-click='create($event)') Create New
+                            .item(ng-repeat='x in alldata', ng-if='alldata.length>0')
+                                .right.floated.content
+                                    .ui.tiny.basic.label(style='text-transform:uppercase;', class='') {{x.status}}
+                                    //- (x.status=='Pending'?'yellow':x.status=='Completed'?'green':x.status=='Failed'?'pink':'red')
+                                    | &nbsp;&middot;&nbsp;
+                                    a.ui(href='javascript:;', t='/Task/edit/{{x.id}}', ng-click="edit($event)", _id='{{x.id}}')
+                                        i.edit.alternate.outline.icon
+                                    | &nbsp;&middot;&nbsp;
+                                    a.ui.red(href='javascript:;', ng-click='delete($event)', _id='{{x.id}}')
+                                        i.trash.alternate.outline.icon
+                                i.calendar.alternate.outline.icon.middle.aligned
+                                .content
+                                    .header {{x.name}}
+                                    .description
+                                        //- | {{x.id}}
+                                        | {{x.timeset}}
+                                        | &nbsp;&middot;&nbsp;{{x.priority}}
+                                        //- | {{x.color}}
+
+
+    div
+        //- Modal Create
+        #addModal.ui.tiny.modal(ng-app='app', ng-controller='taskController')
+            .header Create new Task
+            .content
+                form#fCreate(name='formCreate', t='/Task/store', method='POST', ng-submit='submitCreate()')
+                    include ./add.pug
+            .actions
+                .ui.secondary.deny.button Cancel
+                .ui.primary.positive.right.button
+                    i.plus.circle.icon 
+                    | Create new Task
+        //- Modal Edit
+        #editModal.ui.tiny.modal(ng-app='app', ng-controller='taskController')
+            .header Edit Task
+            .content
+                form#fTaskEdit(name='fTaskEdit', action='/Task/update', method='POST', ng-submit='submitEdit()')
+                    #containerEdit
+                    input(type='hidden', name='taskId', value='')
+            .actions
+                .ui.secondary.deny.button Cancel
+                .ui.primary.positive.blue.right.button
+                    i.edit.circle.icon 
+                    | Update Task
+
+block script
+    script(src='<?=asset_url();?>lib/semantic-calendar/calendar.min.js')
+    script.
+        //- $('#taskTimeset').calendar();
+        $('#taskTimeset').calendar({
+            type: 'date'
+        });
+    //- script.
+    //-     $('#addTask').on('click',(evt)=>{
+    //-         evt.preventDefault();
+    //-     });
+
+    script.
+        var app = angular.module('app', []);
+        app.controller('taskController', ($scope, $http)=>{
+            $scope.taskRefresh = function(){
+                console.time('Refreshing');
+                $scope.getAllData();
+                console.timeEnd('Refreshing');
+            }
+            $scope.getAllData = function(){
+                $('#todoPreloader').addClass('active');
+                $http.get('/Task/all')
+                .then((res)=>{
+                    $scope.alldata = res.data;
+                    $('#todoPreloader').removeClass('active');
+                    $('#todoList').fadeIn();
+                    //console.log($scope.alldata);
+                })
+                ;
+            }
+
+            $scope.create = function(evt){
+                evt.preventDefault();
+                $scope.task = {};
+                $('#addModal')
+                    .modal({
+                        onApprove: ()=>{
+                            $scope.submitCreate();
+                            //- $('#fCreate').submit();
+                        }
+                    })
+                    .modal('show');
+            }
+            $scope.submitCreate = function(){
+                //- evt.preventDefault();
+                var _form = $('#fCreate');
+                var _data = _form.serializeArray();
+                $scope.task = _data;
+                
+                //Jquery POST
+                $.post('/Task/store', _data)
+                .then((res)=>{
+                    console.log(res);
+                    $scope.taskRefresh();
+                    if(res.status) swal('Success','Todo is Created #'+res.id,'success');
+                })
+                .catch(err=>{
+                    console.log(err);
+                })
+                ;
+            }
+
+            $scope.delete = function(item){
+                var $id = item.currentTarget.getAttribute('_id');
+                $http.get('/Task/delete/'+$id)
+                .then((res)=>{
+                    console.log(res);
+                    if(res.status) swal('Success','Todo #'+res.data.id+' is Deleted','success');
+                    $scope.taskRefresh();
+                })
+                ;
+            }
+
+            $scope.edit = function(item){
+                var $id = item.currentTarget.getAttribute('_id');
+                $('input[name=taskId]').val($id)
+                $scope.editid = $id;
+                //- console.log($id);
+                $http.get('/Task/edit/'+$id)
+                .then((res)=>{
+                    if(res.status==200){
+                        $('#containerEdit').html(res.data);
+                        $('#editModal')
+                            .modal({
+                                onApprove: ()=>{
+                                $scope.submitEdit();
+                                }
+                            })
+                            .modal('show');
+                        //- console.log(res);
+                    }
+                })
+                ;
+            }
+
+            $scope.submitEdit = function(){
+                //- console.log('updating ...');
+                var data = $('#fTaskEdit').serializeArray();
+                $.post('/Task/update', data)
+                .then((res)=>{
+                    console.log(res);
+                    if(res.status) swal('Success','Todo #'+res.id+' is Updated','success');
+                    $scope.taskRefresh();
+                })
+                ;
+                console.log(data);
+            }
+        });
+
+
+                                        
